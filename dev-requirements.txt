@@ -1,0 +1,9 @@
+WebTest
+coverage
+pytest
+tox
+flake8
+requests-wsgi-adapter
+newrelic
+-r requirements.txt
+
