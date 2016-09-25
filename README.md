@@ -20,3 +20,17 @@ FLOE_URL_BAR='file:///tmp/floe'
 FLOE_URL_BAZZ='mysql://root:pass@127.0.0.1:3306/test?table=bazz'
 FLOE_URL_QUUX='http://127.0.0.1:995/my_namespace'
 ```
+
+## API
+You can add other connectors. The interface provides the following methods:
+
+  * get
+  * get_multi
+  * set
+  * set_multi
+  * delete
+  * delete_multi
+  * ids
+  * flush
+  
+The ids method returns a generator to iterate.
