@@ -12,9 +12,15 @@ import floe.connector
 
 wsgiadapter.logger.addHandler(logging.NullHandler())
 
+mysql_user = os.getenv('MYSQL_USER', 'root')
+mysql_pass = os.getenv('MYSQL_PASSWORD', None)
+
+mysql_auth = "%s:%s" % (mysql_user, mysql_pass) \
+    if mysql_pass is not None else mysql_user
+
 os.environ['FLOE_URL_TEST_FILE'] = 'file://.test_floe'
 os.environ['FLOE_URL_TEST_MYSQL'] = \
-    "mysql://root@127.0.0.1:3306/test?table=test_floe"
+    "mysql://%s@127.0.0.1:3306/test?table=test_floe" % mysql_auth
 os.environ['FLOE_URL_TEST_REST_BOGUS'] = 'http://test-floe/bogus'
 os.environ['FLOE_URL_TEST_REST_FILE'] = 'http://test-floe/test_file'
 os.environ['FLOE_URL_TEST_REST_MYSQL'] = 'http://test-floe/test_mysql'
