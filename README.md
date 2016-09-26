@@ -33,4 +33,5 @@ You can add other connectors. The interface provides the following methods:
   * ids
   * flush
   
-The ids method returns a generator to iterate.
+The ids method returns a generator to iterate. 
+The multi methods allow you do do batch operations on multiple keys.
