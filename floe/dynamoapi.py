@@ -1,53 +1,52 @@
-import json
-
 import boto3
-from boto3.dynamodb.conditions import Key, Attr
 from botocore.exceptions import ClientError
-
-from .exceptions import FloeWriteException
 from .helpers import validate_key
+
 
 class DynamoFloe(object):
     """
     An implementation of cold storage in dynamodb.
     """
-    # TODO: connection mgmt and endpoint_url/region_name from config - can/should we keep table statically?
-    dynamodb = boto3.resource('dynamodb', region_name='us-west-2', endpoint_url="http://localhost:8000", aws_access_key_id="not_null", aws_secret_access_key="not_null")
+    def __init__(self, table, initialize=False, **conn_kwargs):
+        self.table_name = table
+        self.dynamodb = boto3.resource('dynamodb', **conn_kwargs)
+        if initialize:
+            self.create_floe_table()
+        self.table = self.dynamodb.Table(self.table_name)
 
-    def __init__(self, table_name):
-        self.table = DynamoFloe.dynamodb.Table(table_name)
-
-    @classmethod
-    def create_floe_table(cls, table_name):
+    def create_floe_table(self):
         """
-        Takes in the table_name but hard-codes the rest so we can create temporary testing tables in different
+        Takes in the table_name but hard-codes the rest so we can create
+        temporary testing tables in different
         namespaces without having to know about internal structure.
         :param table_name: DDB Table Name
         :return: the raw API response.
         """
-        return DynamoFloe.dynamodb.create_table(
-            TableName=table_name,
-            KeySchema=[
-                {
-                    'AttributeName': 'key',
-                    'KeyType': 'HASH'
+        try:
+            return self.dynamodb.create_table(
+                TableName=self.table_name,
+                KeySchema=[
+                    {
+                        'AttributeName': 'key',
+                        'KeyType': 'HASH'
+                    }
+                ],
+                AttributeDefinitions=[
+                    {
+                        'AttributeName': 'key',
+                        'AttributeType': 'S'
+                    }
+                ],
+                ProvisionedThroughput={
+                    'ReadCapacityUnits': 10,
+                    'WriteCapacityUnits': 10
                 }
-            ],
-            AttributeDefinitions=[
-                {
-                    'AttributeName': 'key',
-                    'AttributeType': 'S'
-                }
-            ],
-            ProvisionedThroughput={
-                'ReadCapacityUnits': 10,
-                'WriteCapacityUnits': 10
-            }
-        )
+            )
+        except ClientError:
+            pass
 
-    @classmethod
-    def delete_floe_table(cls, table_name):
-        DynamoFloe.dynamodb.Table(table_name).delete()
+    def delete_floe_table(self):
+        self.table.delete()
 
     def get(self, key):
         """
@@ -64,7 +63,7 @@ class DynamoFloe(object):
         if 'Item' not in response:
             return None
         item = response['Item']
-        return None if not 'value' in item else item['value']
+        return None if 'value' not in item else item['value']
 
     def get_multi(self, keys):
         """
@@ -132,7 +131,8 @@ class DynamoFloe(object):
         for key in keys:
             validate_key(key)
 
-        # no batch delete API in Dynamo, so we loop through singles, could expand to launch threads/gevent
+        # no batch delete API in Dynamo, so we loop through singles,
+        # could expand to launch threads/gevent
         for key in keys:
             self.delete(key)
 
@@ -145,10 +145,15 @@ class DynamoFloe(object):
         """
         start_key = None
         while True:
-            response = self.table.scan(ExclusiveStartKey=start_key) if start_key else self.table.scan()
+            response = self.table.scan(ExclusiveStartKey=start_key) \
+                if start_key else self.table.scan()
             for item in response['Items']:
                 yield item['key']
 
-            if not 'LastEvaluatedKey' in response:
+            if 'LastEvaluatedKey' not in response:
                 break
             start_key = response['LastEvaluatedKey']
+
+    def flush(self):
+        self.delete_floe_table()
+        self.create_floe_table()

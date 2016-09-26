@@ -4,6 +4,7 @@ from .exceptions import FloeConfigurationException
 from .fileapi import FileFloe
 from .restapi import RestClientFloe
 from .mysqlapi import MySQLFloe
+from .dynamoapi import DynamoFloe
 try:
     from urllib.parse import urlparse, parse_qs
 except ImportError:
@@ -93,5 +94,26 @@ def connect(name):
 
     if dsn.scheme in ['http', 'https']:
         return RestClientFloe(url)
+
+    if dsn.scheme == 'dynamo':
+
+        conn_kwargs = {
+            "endpoint_url": "http://%s:%s" % (dsn.hostname, dsn.port)
+        }
+
+        if dsn.username:
+            conn_kwargs['aws_access_key_id'] = dsn.username
+
+        if dsn.password:
+            conn_kwargs['aws_secret_access_key'] = dsn.password
+
+        if dsn.path:
+            conn_kwargs['table'] = dsn.path[1:]
+
+        if dsn.query:
+            conn_kwargs.update(
+                {k: v[-1] for k, v in parse_qs(dsn.query).items()})
+
+        return DynamoFloe(**conn_kwargs)
 
     raise FloeConfigurationException('invalid scheme for %s' % name)

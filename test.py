@@ -22,6 +22,9 @@ mysql_auth = "%s:%s" % (mysql_user, mysql_pass) \
 os.environ['FLOE_URL_TEST_FILE'] = 'file://.test_floe'
 os.environ['FLOE_URL_TEST_MYSQL'] = \
     "mysql://%s@127.0.0.1:3306/test?table=test_floe" % mysql_auth
+os.environ['FLOE_URL_TEST_DYNAMO'] = \
+    "dynamo://not_null:not_null@127.0.0.1:8000/floe_testing" \
+    "?region_name=us-west-2&initialize=1"
 os.environ['FLOE_URL_TEST_REST_BOGUS'] = 'http://test-floe/bogus'
 os.environ['FLOE_URL_TEST_REST_FILE'] = 'http://test-floe/test_file'
 os.environ['FLOE_URL_TEST_REST_MYSQL'] = 'http://test-floe/test_mysql'
@@ -29,6 +32,12 @@ os.environ['FLOE_URL_TEST_REST_BROKEN'] = 'http://test-floe/broken'
 
 adapter = wsgiadapter.WSGIAdapter(floe.floe_server())
 floe.restapi.RestClientFloe.session.mount('http://test-floe/', adapter)  # noqa
+
+
+def is_local_dynamo_db_running():
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    result = sock.connect_ex(('127.0.0.1', 8000))
+    return True if result == 0 else False
 
 
 def is_local_mysql_running():
@@ -40,6 +49,12 @@ mysql_test_enable = True if \
     os.getenv('MYSQL_TEST_ENABLE', is_local_mysql_running()) else False
 MYSQL_TEST = unittest.skipIf(not mysql_test_enable,
                              'mysql test disabled on local')
+
+dynamo_test_enable = True if \
+    os.getenv('DYNAMO_TEST_ENABLE', is_local_dynamo_db_running()) else False
+
+DYNAMO_TEST = unittest.skipIf(not dynamo_test_enable,
+                              'dynamo test disabled on local')
 
 
 def xid():
@@ -255,59 +270,8 @@ class RestClientBrokenTest(unittest.TestCase):
                           lambda: [k for k in store.ids()])
 
 
-table_name = 'floe_testing'
+@DYNAMO_TEST
+class DynamoFloeTest(FileFloeTest):
 
-# @unittest.skip('skipping for some dependency failure on boto3 raising "NoCredentialsError"')
-class DynamoFloeTest(unittest.TestCase):
-    def setUp(self):
-        floe.dynamoapi.DynamoFloe.create_floe_table(table_name)
-
-    def tearDown(self):
-        floe.dynamoapi.DynamoFloe.delete_floe_table(table_name)
-
-    def test_single(self):
-        dynamo = floe.dynamoapi.DynamoFloe(table_name)
-        k, v = ('test-key', 'test-value')
-
-        dynamo.set(k, v)
-
-        self.assertEquals(dynamo.get(k), v)
-        dynamo.delete(k)
-        self.assertIsNone(dynamo.get(k))
-
-    def test_multi(self):
-        dynamo = floe.dynamoapi.DynamoFloe(table_name)
-        data = {
-            'key1': 'value1',
-            'key2': 'value2'
-        }
-
-        dynamo.set_multi(data)
-        retrieved = dynamo.get_multi(data.keys())
-        for key in data.keys():
-            self.assertEquals(data[key], retrieved[key])
-
-        dynamo.delete_multi(data.keys())
-        retrieved = dynamo.get_multi(data.keys())
-        self.assertEquals(0, len(retrieved))
-
-    def test_ids(self):
-        dynamo = floe.dynamoapi.DynamoFloe(table_name)
-        data = {
-            'key1': 'value1',
-            'key2': 'value2'
-        }
-
-        dynamo.set_multi(data)
-        retrieved = dynamo.ids()
-
-        count = 0
-        for key in retrieved:
-            count += 1
-            self.assertIsNotNone(data[key])
-
-        self.assertEquals(count, 2)
-
-        dynamo.delete_multi(data.keys())
-        retrieved = dynamo.get_multi(data.keys())
-        self.assertEquals(0, len(retrieved))
+    def init_floe(self):
+        return floe.connect('test_dynamo')

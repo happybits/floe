@@ -40,8 +40,12 @@ The multi methods allow you do do batch operations on multiple keys.
 
 To run the Dyanmo tests, you'll need to download: 
 
-```http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest.tar.gz```
+```
+http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest.tar.gz
+```
 
 And in that directory run the DDB container: 
 
-```java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb```
+```
+java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb
+```
