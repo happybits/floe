@@ -35,3 +35,13 @@ You can add other connectors. The interface provides the following methods:
   
 The ids method returns a generator to iterate. 
 The multi methods allow you do do batch operations on multiple keys.
+
+## Testing
+
+To run the Dyanmo tests, you'll need to download: 
+
+```http://dynamodb-local.s3-website-us-west-2.amazonaws.com/dynamodb_local_latest.tar.gz```
+
+And in that directory run the DDB container: 
+
+```java -Djava.library.path=./DynamoDBLocal_lib -jar DynamoDBLocal.jar -sharedDb```
