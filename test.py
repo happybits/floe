@@ -257,7 +257,7 @@ class RestClientBrokenTest(unittest.TestCase):
 
 table_name = 'floe_testing'
 
-@unittest.skip('skipping for some dependency failure on boto3 raising "NoCredentialsError"')
+# @unittest.skip('skipping for some dependency failure on boto3 raising "NoCredentialsError"')
 class DynamoFloeTest(unittest.TestCase):
     def setUp(self):
         floe.dynamoapi.DynamoFloe.create_floe_table(table_name)
