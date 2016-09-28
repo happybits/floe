@@ -92,7 +92,7 @@ class DynamoFloe(object):
         self.table.put_item(
             Item={
                 'key': key,
-                'value': bin_data
+                'value': boto3.dynamodb.types.Binary(bin_data)
             }
         )
 
