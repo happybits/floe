@@ -10,7 +10,7 @@ COPY supervisor.conf /etc/supervisor/conf.d/
 
 # pip install packages
 COPY ./*requirements.txt /srv/
-RUN /opt/venv/bin/pip install -r /srv/dev-requirements.txt
+RUN /opt/venv/bin/pip install -r /srv/requirements.txt
 
 # add (the rest of) our code
 COPY ./run.py /srv/
@@ -20,8 +20,6 @@ COPY ./uwsgi.ini /srv/
 COPY ./floe/ /srv/floe/
 
 RUN mkdir -p /srv/__pycache__/__pycache__ && chmod -R 1777 /srv/__pycache__ && chmod -R 1777 /srv/__pycache__/__pycache__
-
-RUN cd /srv && /opt/venv/bin/py.test
 
 EXPOSE 8080
 
