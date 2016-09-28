@@ -1,9 +1,7 @@
 
-
 FROM 72squared/microbase:latest
 
 MAINTAINER john@marcopolo.me
-
 
 # setup all the configfiles
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf
@@ -23,8 +21,8 @@ COPY ./floe/ /srv/floe/
 
 RUN mkdir -p /srv/__pycache__/__pycache__ && chmod -R 1777 /srv/__pycache__ && chmod -R 1777 /srv/__pycache__/__pycache__
 
-
 RUN cd /srv && /opt/venv/bin/py.test
 
 EXPOSE 8080
+
 CMD ["supervisord", "-n"]
