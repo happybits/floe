@@ -161,11 +161,13 @@ class MysqlFloe(FileFloeTest):
         self.assertEqual(store.get(foo), foo_test_data)
         self.assertEqual(store.get(foo_upper), foo_upper_test_data)
 
+
 class RestServerAdditionalRoute(object):
 
     def on_get(self, req, resp):
         resp.content_type = 'text/plain'
         resp.body = 'additional'
+
 
 class RestServerTest(unittest.TestCase):
 
@@ -175,7 +177,8 @@ class RestServerTest(unittest.TestCase):
     def setUp(self):
         self.floe = self.init_floe()
         self.floe.flush()
-        self.app = webtest.TestApp(floe.floe_server(routes={'/testroute': RestServerAdditionalRoute()}))
+        self.app = webtest.TestApp(floe.floe_server(
+            routes={'/testroute': RestServerAdditionalRoute()}))
 
     def tearDown(self):
         self.floe.flush()
@@ -216,6 +219,7 @@ class RestServerTest(unittest.TestCase):
         res = self.app.get('/testroute')
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.body, b'additional')
+
 
 class RestClientFileTest(FileFloeTest):
 
