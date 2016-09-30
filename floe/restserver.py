@@ -107,11 +107,14 @@ def invalid_key_handler(ex, req, resp, params):
     format_error(ex, resp, code='INVALID-KEY', status=falcon.HTTP_400)
 
 
-def floe_server():
+def floe_server(routes=None):
     app = falcon.API(media_type='binary/octet-stream')
     app.add_route('/{domain}/{key}', RestServerFloeResource())
     app.add_route('/{domain}', RestServerFloeIndex())
     app.add_route('/', RestServerFloeLanding())
+    if routes:
+        for uri, handler in routes.items():
+            app.add_route(uri, handler)
     app.add_error_handler(FloeException, configuration_error_handler)
     app.add_error_handler(FloeInvalidKeyException, invalid_key_handler)
     app.add_error_handler(FloeOperationalException, operational_error_handler)
