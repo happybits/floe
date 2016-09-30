@@ -36,7 +36,6 @@ setup(
     license='MIT',
     install_requires=[
         'falcon>=0.3.0',
-        'pymysql',
         'requests',
     ],
     include_package_data=True,

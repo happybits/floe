@@ -1,10 +1,18 @@
 from os import getenv
-import pymysql
 from .exceptions import FloeConfigurationException
 from .fileapi import FileFloe
 from .restapi import RestClientFloe
-from .mysqlapi import MySQLFloe
-from .dynamoapi import DynamoFloe
+
+try:
+    from .mysqlapi import MySQLFloe
+except ImportError:
+    MySQLFloe = None
+
+try:
+    from .dynamoapi import DynamoFloe
+except ImportError:
+    DynamoFloe = None
+
 try:
     from urllib.parse import urlparse, parse_qs
 except ImportError:
@@ -64,9 +72,11 @@ def connect(name):
         return FileFloe(directory=directory)
 
     if dsn.scheme == 'mysql':
-        conn_kwargs = {
-            'cursorclass': pymysql.cursors.SSCursor
-        }
+        if MySQLFloe is None:
+            FloeConfigurationException('mysql dependencies missing')
+
+        conn_kwargs = {}
+
         if dsn.hostname:
             conn_kwargs['host'] = dsn.hostname
 
@@ -96,6 +106,8 @@ def connect(name):
         return RestClientFloe(url)
 
     if dsn.scheme == 'dynamo':
+        if DynamoFloe is None:
+            FloeConfigurationException('dynamo dependencies missing')
 
         conn_kwargs = {
             "endpoint_url": "http://%s:%s" % (dsn.hostname, dsn.port)

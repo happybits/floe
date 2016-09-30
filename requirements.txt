@@ -1,4 +1,2 @@
 falcon>=0.3.0
-pymysql
 requests
-boto3==1.0.0

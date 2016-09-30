@@ -104,6 +104,8 @@ class MySQLFloe(object):
 
         self.table = table
         conn_kwargs['autocommit'] = True
+        conn_kwargs.setdefault('cursorclass', pymysql.cursors.SSCursor)
+
         pool_size = int(pool_size)
         self.pool = self._create_pool(pool_size=pool_size, **conn_kwargs)
 

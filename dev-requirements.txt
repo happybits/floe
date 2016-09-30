@@ -5,5 +5,7 @@ tox
 flake8
 requests-wsgi-adapter
 newrelic
+pymysql
+boto3
 -r requirements.txt
 
