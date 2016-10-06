@@ -71,6 +71,9 @@ class RestClientFloe(object):
         if resp.status_code == 404:
             return None
 
+        if int(resp.headers.get('content-length', 0)) == 0:
+            return None
+
         return resp.content
 
     def set(self, key, value):

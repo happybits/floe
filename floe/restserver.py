@@ -41,9 +41,7 @@ class RestServerFloeResource(object):
     def on_get(self, req, resp, domain, key):
         cs = get_connection(domain)
         response = cs.get(key)
-        if response is None:
-            raise falcon.HTTPNotFound()
-        resp.body = response
+        resp.body = b'' if response is None else response
 
     @app_trace
     def on_put(self, req, resp, domain, key):

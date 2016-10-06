@@ -128,13 +128,22 @@ class FileFloeTest(unittest.TestCase):
         self.assertEqual(store.get_multi([foo, bar, bazz]), {})
 
         self.assertRaises(floe.FloeInvalidKeyException,
-                          lambda: store.get('foo$'))
+                          lambda: store.get('foo/bar'))
 
         self.assertRaises(floe.FloeInvalidKeyException,
-                          lambda: store.set('foo$', '1'))
+                          lambda: store.set('foo/bar', '1'))
 
         self.assertRaises(floe.FloeInvalidKeyException,
-                          lambda: store.delete('foo$'))
+                          lambda: store.delete('foo/bar'))
+
+        self.assertRaises(floe.FloeInvalidKeyException,
+                          lambda: store.get('foo/bar'))
+
+        self.assertRaises(floe.FloeInvalidKeyException,
+                          lambda: store.set('foo/bar', '1'))
+
+        self.assertRaises(floe.FloeInvalidKeyException,
+                          lambda: store.delete('foo/bar'))
 
 
 class MysqlFloe(FileFloeTest):
@@ -186,7 +195,8 @@ class RestServerTest(unittest.TestCase):
     def test_crud(self):
         key = xid()
         res = self.app.get('/test_file/%s' % key, expect_errors=True)
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.content_length, 0)
         data = os.urandom(100)
         res = self.app.put('/test_file/%s' % key, params=data,
                            headers={'content-type': 'binary/octet-stream'})
@@ -209,6 +219,10 @@ class RestServerTest(unittest.TestCase):
                 result_keys.update(json.loads(line.strip()))
 
         self.assertEqual(keys, result_keys)
+
+    def test_nested_dirs(self):
+        res = self.app.get('/test_file/foo/bar', expect_errors=True)
+        self.assertEqual(res.status_code, 404)
 
     def test_index(self):
         res = self.app.get('/')
