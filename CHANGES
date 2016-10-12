@@ -1,1 +1,14 @@
-INITIAL PROJECT SETUP
+2016-10-12 John Loehrer <john@happybits.co>
+    * Add MIT LICENSE
+
+2016-10-06 John Loehrer <john@happybits.co>
+    * make a 200 empty error response mean no data found for the key
+
+2016-09-30 John Loehrer <john@happybits.co>
+    * make mysql and dynamo dependencies optional
+
+2016-09-30 millisecond <millisecond@gmail.com>
+    * Add support for floe users to add routes into the raw app object.
+
+2016-09-25 John Loehrer <john@happybits.co>
+    * initial project
