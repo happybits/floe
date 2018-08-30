@@ -19,14 +19,14 @@ class FileFloe(object):
 
     def _resolve_path(self, key):
         parts = [self.dir]
-        l = len(key)
-        if l > 2:
+        length = len(key)
+        if length > 2:
             parts.append(key[0:2])
 
-        if l > 4:
+        if length > 4:
             parts.append(key[2:4])
 
-        if l > 6:
+        if length > 6:
             parts.append(key[4:6])
 
         parts.append("%s.bin" % key)

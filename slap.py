@@ -10,10 +10,10 @@ from time import time, sleep
 def xid():
     return uuid4().hex
 
+
 random_binary_chunk = os.urandom(200)
 
 ct = 0
-
 
 BATCHSIZE = 100
 
@@ -22,7 +22,7 @@ conn.flush()
 
 while True:
     try:
-        mapping = {xid(): random_binary_chunk for _ in range(1,  BATCHSIZE)}
+        mapping = {xid(): random_binary_chunk for _ in range(1, BATCHSIZE)}
         start = time()
         conn.set_multi(mapping)
         end = time()

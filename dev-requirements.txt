@@ -2,7 +2,7 @@ WebTest
 coverage
 pytest
 tox
-flake8
+flake8>=3.5.0
 requests-wsgi-adapter
 newrelic
 pymysql

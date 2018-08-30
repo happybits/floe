@@ -56,5 +56,6 @@ def app_trace(f):
 def wrap_app(app):
     return WSGIApplicationWrapper(app)
 
+
 # kick off new-relic monitoring.
 initialize()

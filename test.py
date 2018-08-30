@@ -36,6 +36,7 @@ def is_local_mysql_running():
     result = sock.connect_ex(('127.0.0.1', 3306))
     return True if result == 0 else False
 
+
 mysql_test_enable = True if \
     os.getenv('MYSQL_TEST_ENABLE', is_local_mysql_running()) else False
 MYSQL_TEST = unittest.skipIf(not mysql_test_enable,
