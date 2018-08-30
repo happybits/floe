@@ -1,9 +1,10 @@
 .*
-*.iml
 *.pyc
 .DS_Store
 *.diff
 /__pycache__
 /build
 /*.egg-info
+/dist
+/docs/_build/*
 

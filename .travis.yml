@@ -1,0 +1,26 @@
+sudo: false
+language: python
+python:
+  - "2.7"
+  - "3.5"
+  - "3.6"
+  - "nightly"
+  - "pypy"
+  - "pypy3"
+install:
+  - pip install -r dev-requirements.txt
+env:
+  global:
+    - IS_TRAVIS=1
+
+script:
+  - coverage erase
+  - coverage run --source floe -p test.py
+  - flake8 --exclude=./build,.venv*,.tox,dist
+
+after_success:
+  - coverage combine
+  - coveralls
+matrix:
+  allow_failures:
+    - python: "nightly"

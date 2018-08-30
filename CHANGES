@@ -1,3 +1,6 @@
+2018-08-30 John Loehrer <john@happybits.co>
+    * Remove Dynamo connector. Unused, not well-tested.
+
 2016-10-12 John Loehrer <john@happybits.co>
     * Add MIT LICENSE
 
@@ -5,7 +8,7 @@
     * make a 200 empty error response mean no data found for the key
 
 2016-09-30 John Loehrer <john@happybits.co>
-    * make mysql and dynamo dependencies optional
+    * make mysql dependencies optional
 
 2016-09-30 millisecond <millisecond@gmail.com>
     * Add support for floe users to add routes into the raw app object.
