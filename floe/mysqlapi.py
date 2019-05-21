@@ -7,6 +7,7 @@ from .exceptions import FloeReadException, \
 
 warnings.filterwarnings('ignore', category=pymysql.Warning)
 
+DEFAULT_MAX_CHAR_LEN = 65535
 
 class MySQLPool(object):
     """
@@ -88,7 +89,7 @@ class MySQLConnection(object):
 
 class MySQLFloe(object):
     def __init__(self, table, default_partitions=10, pool_size=5,
-                 init_disable=False, **conn_kwargs):
+                 init_disable=False, dynamic_char_len=False, **conn_kwargs):
         """
         specify the database, table, and connection parameters for mysql.
         This will hold on to the parameters and create the connection
@@ -103,12 +104,15 @@ class MySQLFloe(object):
         """
 
         self.table = table
+        self.max_char_len = DEFAULT_MAX_CHAR_LEN
         conn_kwargs['autocommit'] = True
         conn_kwargs.setdefault('cursorclass', pymysql.cursors.SSCursor)
 
         pool_size = int(pool_size)
         self.pool = self._create_pool(pool_size=pool_size, **conn_kwargs)
-
+        if dynamic_char_len:
+            self._get_max_char_len(**conn_kwargs)
+      
         if not init_disable:
             try:
                 schema = "CREATE TABLE IF NOT EXISTS {} (" \
@@ -122,6 +126,27 @@ class MySQLFloe(object):
                         cursor.execute(statement)
             except pymysql.Error:
                 pass
+
+    def _set_max_char_len(self, **conn_kwargs):
+        db = conn_kwargs.get('db')
+        if not db:
+            return
+
+        statement = "SELECT `CHARACTER_MAXIMUM_LENGTH`"\
+                    "FROM `INFORMATION_SCHEMA`.`COLUMNS`"\
+                    "WHERE `TABLE_SCHEMA` = %s"\
+                    "AND `TABLE_NAME` = %s"\
+                    "AND `COLUMN_NAME` = 'bin'"
+        
+        try:
+            with self.pool.connection() as connection:
+                with connection.cursor() as cursor:
+                    cursor.execute(statement, (db, self.table))
+                    for row in cursor.fetchall():
+                        self.max_char_len = row[0]
+        except pymysql.Error as e:
+            raise FloeReadException(e)
+        
 
     def _create_pool(self, pool_size=5, **conn_kwargs):
         if pool_size and pool_size > 0:
@@ -184,6 +209,7 @@ class MySQLFloe(object):
         :return:
         """
         validate_key(pk)
+        # validate_data(bin_data)
         return self.set_multi({pk: bin_data})
 
     def set_multi(self, mapping):

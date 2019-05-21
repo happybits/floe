@@ -15,6 +15,9 @@ def validate_key(key):
     if not KEY_PATTERN.match(key):
         raise FloeInvalidKeyException(key)
 
+def validate_data(value):
+    if len(value) > MYSQL_BLOB_MAX_VALUE:
+        raise FloeInvalidKeyException('TODO REMOVE ME')
 
 def chunks(iterable, size):
     iterable = iter(iterable)
