@@ -4,12 +4,13 @@ from contextlib import contextmanager
 from .helpers import current_time, validate_key
 from .exceptions import FloeReadException, \
     FloeWriteException, FloeDeleteException, \
-    FloeDataOverflowException
+    FloeDataOverflowException, FloeConfigurationException
 
 
 warnings.filterwarnings('ignore', category=pymysql.Warning)
 
 DEFAULT_MAX_CHAR_LEN = 65535
+ALLOWED_BIN_DATA_TYPES = ['blob', 'mediumblob', 'longblob']
 
 
 class MySQLPool(object):
@@ -92,7 +93,9 @@ class MySQLConnection(object):
 
 class MySQLFloe(object):
     def __init__(self, table, default_partitions=10, pool_size=5,
-                 init_disable=False, dynamic_char_len=False, **conn_kwargs):
+                 init_disable=False, bin_data_type='mediumblob',
+                 dynamic_char_len=False,
+                 **conn_kwargs):
         """
         specify the database, table, and connection parameters for mysql.
         This will hold on to the parameters and create the connection
@@ -113,22 +116,27 @@ class MySQLFloe(object):
 
         pool_size = int(pool_size)
         self.pool = self._create_pool(pool_size=pool_size, **conn_kwargs)
-        if dynamic_char_len:
-            self._set_max_char_len(**conn_kwargs)
 
         if not init_disable:
+            if bin_data_type.lower() not in ALLOWED_BIN_DATA_TYPES:
+                raise FloeConfigurationException(bin_data_type)
+
             try:
                 schema = "CREATE TABLE IF NOT EXISTS {} (" \
                          "`pk` VARBINARY(32) NOT NULL PRIMARY KEY, " \
-                         "`bin` MEDIUMBLOB NOT NULL" \
+                         "`bin` {} NOT NULL" \
                          ") ENGINE=InnoDB " \
                          "/*!50100 PARTITION BY KEY (pk) PARTITIONS {} */"
-                statement = schema.format(self.table, default_partitions)
+                statement = schema.format(self.table, bin_data_type,
+                                          default_partitions)
                 with self.pool.connection() as connection:
                     with connection.cursor() as cursor:
                         cursor.execute(statement)
             except pymysql.Error:
                 pass
+
+        if dynamic_char_len:
+            self._set_max_char_len(**conn_kwargs)
 
     def _set_max_char_len(self, **conn_kwargs):
         db = conn_kwargs.get('db')
