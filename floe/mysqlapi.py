@@ -3,7 +3,8 @@ import warnings
 from contextlib import contextmanager
 from .helpers import current_time, validate_key
 from .exceptions import FloeReadException, \
-    FloeWriteException, FloeDeleteException
+    FloeWriteException, FloeDeleteException, \
+    FloeDataOverflowException
 
 warnings.filterwarnings('ignore', category=pymysql.Warning)
 
@@ -111,7 +112,7 @@ class MySQLFloe(object):
         pool_size = int(pool_size)
         self.pool = self._create_pool(pool_size=pool_size, **conn_kwargs)
         if dynamic_char_len:
-            self._get_max_char_len(**conn_kwargs)
+            self._set_max_char_len(**conn_kwargs)
       
         if not init_disable:
             try:
@@ -147,6 +148,9 @@ class MySQLFloe(object):
         except pymysql.Error as e:
             raise FloeReadException(e)
         
+    def _validate_data(self, value):
+        if len(value) > self.max_char_len:
+            raise FloeDataOverflowException(len(value))
 
     def _create_pool(self, pool_size=5, **conn_kwargs):
         if pool_size and pool_size > 0:
@@ -209,7 +213,7 @@ class MySQLFloe(object):
         :return:
         """
         validate_key(pk)
-        # validate_data(bin_data)
+        self._validate_data(bin_data)
         return self.set_multi({pk: bin_data})
 
     def set_multi(self, mapping):
