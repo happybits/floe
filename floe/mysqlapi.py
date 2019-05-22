@@ -6,9 +6,11 @@ from .exceptions import FloeReadException, \
     FloeWriteException, FloeDeleteException, \
     FloeDataOverflowException
 
+
 warnings.filterwarnings('ignore', category=pymysql.Warning)
 
 DEFAULT_MAX_CHAR_LEN = 65535
+
 
 class MySQLPool(object):
     """
@@ -113,12 +115,12 @@ class MySQLFloe(object):
         self.pool = self._create_pool(pool_size=pool_size, **conn_kwargs)
         if dynamic_char_len:
             self._set_max_char_len(**conn_kwargs)
-      
+
         if not init_disable:
             try:
                 schema = "CREATE TABLE IF NOT EXISTS {} (" \
                          "`pk` VARBINARY(32) NOT NULL PRIMARY KEY, " \
-                         "`bin` LONGBLOB NOT NULL" \
+                         "`bin` MEDIUMBLOB NOT NULL" \
                          ") ENGINE=InnoDB " \
                          "/*!50100 PARTITION BY KEY (pk) PARTITIONS {} */"
                 statement = schema.format(self.table, default_partitions)
@@ -138,7 +140,7 @@ class MySQLFloe(object):
                     "WHERE `TABLE_SCHEMA` = %s"\
                     "AND `TABLE_NAME` = %s"\
                     "AND `COLUMN_NAME` = 'bin'"
-        
+
         try:
             with self.pool.connection() as connection:
                 with connection.cursor() as cursor:
@@ -147,7 +149,7 @@ class MySQLFloe(object):
                         self.max_char_len = row[0]
         except pymysql.Error as e:
             raise FloeReadException(e)
-        
+
     def _validate_data(self, value):
         if len(value) > self.max_char_len:
             raise FloeDataOverflowException(len(value))

@@ -24,7 +24,7 @@ os.environ['FLOE_URL_TEST_MYSQL'] = \
     "mysql://%s@127.0.0.1:3306/test?table=test_floe" % mysql_auth
 os.environ['FLOE_URL_TEST_MYSQL_2'] = \
     "mysql://%s@127.0.0.1:3306/test?table=test_floe_2&dynamic_char_len=False" \
-         % mysql_auth
+    % mysql_auth
 os.environ['FLOE_URL_TEST_REST_BOGUS'] = 'http://test-floe/bogus'
 os.environ['FLOE_URL_TEST_REST_FILE'] = 'http://test-floe/test_file'
 os.environ['FLOE_URL_TEST_REST_MYSQL'] = 'http://test-floe/test_mysql'
@@ -46,7 +46,8 @@ MYSQL_TEST = unittest.skipIf(not mysql_test_enable,
                              'mysql test disabled on local')
 
 BLOB_MAX_CHAR_LEN = 65535
-LONG_BLOB_MAX_CHAR_LEN = 4294967295
+MEDIUM_BLOB_MAX_CHAR_LEN = 16777215
+
 
 def xid():
     return uuid.uuid4().hex
@@ -167,11 +168,16 @@ class MysqlFloe(FileFloeTest):
         foo = xid()
         foo_smaller = foo.upper()
 
-        foo_data = os.urandom(LONG_BLOB_MAX_CHAR_LEN + 1)
+        foo_data = os.urandom(MEDIUM_BLOB_MAX_CHAR_LEN + 1)
 
         self.assertRaises(
             floe.FloeDataOverflowException,
             lambda: store.set(foo, foo_data))
+
+        foo_smaller_data = foo_data[:-1]
+        store.set(foo_smaller, foo_smaller_data)
+
+        self.assertEqual(store.get(foo_smaller), foo_smaller_data)
 
     @MYSQL_TEST
     def test_data_overflow(self):
@@ -187,7 +193,7 @@ class MysqlFloe(FileFloeTest):
 
         foo_smaller_data = foo_data[:-1]
         store.set(foo_smaller, foo_smaller_data)
-        
+
         self.assertEqual(store.get(foo_smaller), foo_smaller_data)
 
 
