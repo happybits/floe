@@ -24,7 +24,8 @@ class RestServerFloeIndex(object):
         # not setting because wsgiref doesn't natively support it and
         # uwsgi will automatically handle this for us.
         # resp.append_header('Transfer-Encoding', 'chunked')
-        resp.set_stream(generator(), stream_len=None)
+        resp.stream = generator()
+        # resp.set_stream(generator(), stream_len=None)
 
     @app_trace
     def on_delete(self, req, resp, domain):
