@@ -118,7 +118,7 @@ class MySQLFloe(object):
             try:
                 schema = "CREATE TABLE IF NOT EXISTS {} (" \
                          "`pk` VARBINARY(32) NOT NULL PRIMARY KEY, " \
-                         "`bin` BLOB NOT NULL" \
+                         "`bin` LONGBLOB NOT NULL" \
                          ") ENGINE=InnoDB " \
                          "/*!50100 PARTITION BY KEY (pk) PARTITIONS {} */"
                 statement = schema.format(self.table, default_partitions)
