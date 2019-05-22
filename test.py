@@ -22,6 +22,9 @@ mysql_auth = "%s:%s" % (mysql_user, mysql_pass) \
 os.environ['FLOE_URL_TEST_FILE'] = 'file://.test_floe'
 os.environ['FLOE_URL_TEST_MYSQL'] = \
     "mysql://%s@127.0.0.1:3306/test?table=test_floe" % mysql_auth
+os.environ['FLOE_URL_TEST_MYSQL_2'] = \
+    "mysql://%s@127.0.0.1:3306/test?table=test_floe_2&dynamic_char_len=False" \
+         % mysql_auth
 os.environ['FLOE_URL_TEST_REST_BOGUS'] = 'http://test-floe/bogus'
 os.environ['FLOE_URL_TEST_REST_FILE'] = 'http://test-floe/test_file'
 os.environ['FLOE_URL_TEST_REST_MYSQL'] = 'http://test-floe/test_mysql'
@@ -42,6 +45,8 @@ mysql_test_enable = True if \
 MYSQL_TEST = unittest.skipIf(not mysql_test_enable,
                              'mysql test disabled on local')
 
+BLOB_MAX_CHAR_LEN = 65535
+LONG_BLOB_MAX_CHAR_LEN = 4294967295
 
 def xid():
     return uuid.uuid4().hex
@@ -155,6 +160,35 @@ class MysqlFloe(FileFloeTest):
         store.set(foo_upper, foo_upper_test_data)
         self.assertEqual(store.get(foo), foo_test_data)
         self.assertEqual(store.get(foo_upper), foo_upper_test_data)
+
+    @MYSQL_TEST
+    def test_data_overflow_from_sql(self):
+        store = floe.connect('test_mysql_2')
+        foo = xid()
+        foo_smaller = foo.upper()
+
+        foo_data = os.urandom(LONG_BLOB_MAX_CHAR_LEN + 1)
+
+        self.assertRaises(
+            floe.FloeDataOverflowException,
+            lambda: store.set(foo, foo_data))
+
+    @MYSQL_TEST
+    def test_data_overflow(self):
+        store = self.floe
+        foo = xid()
+        foo_smaller = foo.upper()
+
+        foo_data = os.urandom(BLOB_MAX_CHAR_LEN + 1)
+
+        self.assertRaises(
+            floe.FloeDataOverflowException,
+            lambda: store.set(foo, foo_data))
+
+        foo_smaller_data = foo_data[:-1]
+        store.set(foo_smaller, foo_smaller_data)
+        
+        self.assertEqual(store.get(foo_smaller), foo_smaller_data)
 
 
 class RestServerAdditionalRoute(object):
@@ -281,3 +315,7 @@ class RestClientBrokenTest(unittest.TestCase):
 
         self.assertRaises(floe.FloeReadException,
                           lambda: [k for k in store.ids()])
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)
