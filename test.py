@@ -48,10 +48,13 @@ def is_local_mysql_running():
     return True if result == 0 else False
 
 
+codeship_build = os.getenv('CODESHIP_BUILD')
+
 mysql_test_enable = True if \
-    os.getenv('MYSQL_TEST_ENABLE', is_local_mysql_running()) else False
-MYSQL_TEST = unittest.skipIf(not mysql_test_enable,
-                             'mysql test disabled on local')
+    os.getenv('MYSQL_TEST_ENABLE', is_local_mysql_running()) \
+    else False
+MYSQL_TEST = unittest.skipIf(codeship_build or not mysql_test_enable,
+                             'mysql test disabled on local and codeship')
 
 BLOB_MAX_CHAR_LEN = 65535
 MEDIUM_BLOB_MAX_CHAR_LEN = 16777215
