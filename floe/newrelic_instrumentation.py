@@ -1,15 +1,21 @@
 import functools
 import sys
 import falcon
-from newrelic.agent import (
-    callable_name,
-    FunctionTrace,
-    current_transaction,
-    set_transaction_name,
-    record_exception,
-    initialize,
-    WSGIApplicationWrapper,
-)
+import warnings
+
+with warnings.catch_warnings():
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+    warnings.filterwarnings("ignore", category=PendingDeprecationWarning)
+
+    from newrelic.agent import (
+        callable_name,
+        FunctionTrace, 
+        current_transaction, 
+        set_transaction_name, 
+        record_exception, 
+        initialize, 
+        WSGIApplicationWrapper,
+    )
 
 EMPTY_EXC_INFO = (None, None, None)
 
