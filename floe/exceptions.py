@@ -5,7 +5,8 @@ __all__ = [
     'FloeDeleteException',
     'FloeReadException',
     'FloeWriteException',
-    'FloeInvalidKeyException'
+    'FloeInvalidKeyException',
+    'FloeDataOverflowException'
 ]
 
 
@@ -15,6 +16,10 @@ class FloeException(Exception):
 
 
 class FloeInvalidKeyException(FloeException):
+    pass
+
+
+class FloeDataOverflowException(FloeException):
     pass
 
 

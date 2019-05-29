@@ -2,8 +2,6 @@
 
 This presents a simple key value data store with a list of ids and configurable backends.
 
-Can use it as a python backend or as a uwsgi application in a docker container.
-
 ## Configuration
 You can configure docker with environmental variables.
 
