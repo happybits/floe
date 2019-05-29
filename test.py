@@ -9,7 +9,8 @@ import logging
 import socket
 import floe.restapi
 import floe.connector
-
+import time
+import pymysql
 
 wsgiadapter.logger.addHandler(logging.NullHandler())
 
@@ -19,16 +20,26 @@ mysql_pass = os.getenv('MYSQL_PASSWORD', None)
 mysql_auth = "%s:%s" % (mysql_user, mysql_pass) \
     if mysql_pass is not None else mysql_user
 
+table_prefix_variable = int(time.time())
+
 os.environ['FLOE_URL_TEST_FILE'] = 'file://.test_floe'
-os.environ['FLOE_URL_TEST_MYSQL'] = \
-    "mysql://%s@127.0.0.1:3306/test?table=test_floe" % mysql_auth
+
 os.environ['FLOE_URL_TEST_REST_BOGUS'] = 'http://test-floe/bogus'
 os.environ['FLOE_URL_TEST_REST_FILE'] = 'http://test-floe/test_file'
-os.environ['FLOE_URL_TEST_REST_MYSQL'] = 'http://test-floe/test_mysql'
 os.environ['FLOE_URL_TEST_REST_BROKEN'] = 'http://test-floe/broken'
 
 adapter = wsgiadapter.WSGIAdapter(floe.floe_server())
 floe.restapi.RestClientFloe.session.mount('http://test-floe/', adapter)  # noqa
+
+
+def drop_table(pool, table_name):
+    statement = "DROP table {}".format(table_name)
+    try:
+        with pool.connection() as connection:
+            with connection.cursor() as cursor:
+                cursor.execute(statement)
+    except pymysql.Error as e:
+        raise e
 
 
 def is_local_mysql_running():
@@ -37,10 +48,16 @@ def is_local_mysql_running():
     return True if result == 0 else False
 
 
+codeship_build = os.getenv('CODESHIP_BUILD')
+
 mysql_test_enable = True if \
-    os.getenv('MYSQL_TEST_ENABLE', is_local_mysql_running()) else False
-MYSQL_TEST = unittest.skipIf(not mysql_test_enable,
-                             'mysql test disabled on local')
+    os.getenv('MYSQL_TEST_ENABLE', is_local_mysql_running()) \
+    else False
+MYSQL_TEST = unittest.skipIf(codeship_build or not mysql_test_enable,
+                             'mysql test disabled on local and codeship')
+
+BLOB_MAX_CHAR_LEN = 65535
+MEDIUM_BLOB_MAX_CHAR_LEN = 16777215
 
 
 def xid():
@@ -133,9 +150,33 @@ class FileFloeTest(unittest.TestCase):
 
 
 class MysqlFloe(FileFloeTest):
+    def setUp(self):
+        self.mysql_tables = [
+            '%s_%s' % (table_name, table_prefix_variable)
+            for table_name in ['test_floe', 'test_floe_2', 'test_floe_3']
+        ]
+
+        for index, table in enumerate(self.mysql_tables):
+            environ_key = 'FLOE_URL_%s' % table.upper()
+            url = "mysql://%s@127.0.0.1:3306/test?table=%s" % (
+                mysql_auth, table)
+
+            if index > 0:
+                url += "&dynamic_char_len=True"
+            if index > 1:
+                url += "&bin_data_type=blob"
+
+            os.environ[environ_key] = url
+
+        super(MysqlFloe, self).setUp()
+
+    def tearDown(self):
+        for table in self.mysql_tables:
+            store = floe.connect(table)
+            drop_table(store.pool, table)
 
     def init_floe(self):
-        return floe.connect('test_mysql')
+        return floe.connect(self.mysql_tables[0])
 
     @MYSQL_TEST
     def test_main(self):
@@ -155,6 +196,57 @@ class MysqlFloe(FileFloeTest):
         store.set(foo_upper, foo_upper_test_data)
         self.assertEqual(store.get(foo), foo_test_data)
         self.assertEqual(store.get(foo_upper), foo_upper_test_data)
+
+    @MYSQL_TEST
+    def test_data_overflow_from_sql(self):
+        store = floe.connect(self.mysql_tables[1])
+        foo = xid()
+        foo_smaller = foo.upper()
+
+        foo_data = os.urandom(MEDIUM_BLOB_MAX_CHAR_LEN + 1)
+
+        self.assertRaises(
+            floe.FloeDataOverflowException,
+            lambda: store.set(foo, foo_data))
+
+        foo_smaller_data = foo_data[:-1]
+        store.set(foo_smaller, foo_smaller_data)
+
+        self.assertEqual(store.get(foo_smaller), foo_smaller_data)
+
+    @MYSQL_TEST
+    def test_data_overflow(self):
+        store = self.floe
+        foo = xid()
+        foo_smaller = foo.upper()
+
+        foo_data = os.urandom(BLOB_MAX_CHAR_LEN + 1)
+
+        self.assertRaises(
+            floe.FloeDataOverflowException,
+            lambda: store.set(foo, foo_data))
+
+        foo_smaller_data = foo_data[:-1]
+        store.set(foo_smaller, foo_smaller_data)
+
+        self.assertEqual(store.get(foo_smaller), foo_smaller_data)
+
+    @MYSQL_TEST
+    def test_custom_bin_data_type(self):
+        store = floe.connect(self.mysql_tables[2])
+        foo = xid()
+        foo_smaller = foo.upper()
+
+        foo_data = os.urandom(BLOB_MAX_CHAR_LEN + 1)
+
+        self.assertRaises(
+            floe.FloeDataOverflowException,
+            lambda: store.set(foo, foo_data))
+
+        foo_smaller_data = foo_data[:-1]
+        store.set(foo_smaller, foo_smaller_data)
+
+        self.assertEqual(store.get(foo_smaller), foo_smaller_data)
 
 
 class RestServerAdditionalRoute(object):
@@ -228,9 +320,24 @@ class RestClientFileTest(FileFloeTest):
 
 
 class RestClientMysqlTest(FileFloeTest):
+    def setUp(self):
+        table = '%s_%s' % ('rest_mysql', table_prefix_variable)
+        os.environ['FLOE_URL_TEST_REST_MYSQL'] = 'http://test-floe/%s' % table
+
+        environ_key = 'FLOE_URL_%s' % table.upper()
+        url = "mysql://%s@127.0.0.1:3306/test?table=%s" % (
+            mysql_auth, table)
+
+        self.table = table
+        os.environ[environ_key] = url
+        super(RestClientMysqlTest, self).setUp()
+
+    def tearDown(self):
+        store = self.floe
+        drop_table(store.pool, self.table)
 
     def init_floe(self):
-        return floe.connect('test_rest_mysql')
+        return floe.connect(self.table)
 
     @MYSQL_TEST
     def test_main(self):
@@ -281,3 +388,7 @@ class RestClientBrokenTest(unittest.TestCase):
 
         self.assertRaises(floe.FloeReadException,
                           lambda: [k for k in store.ids()])
+
+
+if __name__ == "__main__":
+    unittest.main(verbosity=2)

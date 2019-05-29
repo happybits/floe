@@ -3,7 +3,7 @@ coverage
 pytest
 tox
 flake8>=3.5.0
-requests-wsgi-adapter
+requests-wsgi-adapter==0.4.0
 newrelic
 pymysql
 boto3

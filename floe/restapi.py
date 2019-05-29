@@ -136,7 +136,7 @@ class RestClientFloe(object):
 
             if linebreak > 0:
                 for key in json.loads(buffer[0:linebreak].decode('utf-8')):
-                        yield key
+                    yield key
 
             buffer = buffer[linebreak+1:]
 

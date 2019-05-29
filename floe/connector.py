@@ -95,6 +95,8 @@ def connect(name):
                 table = conn_kwargs['table']
                 del conn_kwargs['table']
 
+        conn_kwargs['binary_prefix'] = True
+
         return MySQLFloe(table=table, **conn_kwargs)
 
     if dsn.scheme in ['http', 'https']:

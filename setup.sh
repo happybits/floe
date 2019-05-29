@@ -27,7 +27,7 @@ fi
 if [ ! -f "$venv_dir/bin/python" ]
 then
     echo "configuring virtualenv $venv_dir ..."
-    virtualenv -q "$venv_dir" || { echo >&2 "unable to configure the virtualenv for the project in $venv_dir"; exit 1; }
+    virtualenv -p python3 -q "$venv_dir" || { echo >&2 "unable to configure the virtualenv for the project in $venv_dir"; exit 1; }
 fi
 
 

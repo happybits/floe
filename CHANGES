@@ -1,3 +1,7 @@
+2019-05-29 Daniel Maxson <danny@happybits.co>
+    * Python3 compatibility
+    * Better error handling for MySQL field length constraints
+    
 2018-08-30 John Loehrer <john@happybits.co>
     * Remove Dynamo connector. Unused, not well-tested.
 
