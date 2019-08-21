@@ -27,10 +27,8 @@ def trace(f, group=None, txn_name=None):
     @functools.wraps(f)
     def inner(*args, **kwargs):
         with FunctionTrace(
-            transaction=current_transaction(),
             name=txn_name,
             group=group
-
         ):
             try:
                 return f(*args, **kwargs)
@@ -48,7 +46,7 @@ def app_trace(f):
         txn_name = "%s:%s" % (
             callable_name(resource, separator='.'), f.__name__)
         set_transaction_name(txn_name)
-        with FunctionTrace(transaction=current_transaction(), name=txn_name):
+        with FunctionTrace(name=txn_name):
             try:
                 return f(resource, req, resp, *args, **kwargs)
             except Exception as e:
