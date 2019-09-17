@@ -3,7 +3,7 @@ import errno
 import shutil
 import re
 from .exceptions import FloeWriteException
-from .helpers import validate_key
+from .helpers import sanitize_key
 
 
 class FileFloe(object):
@@ -53,7 +53,7 @@ class FileFloe(object):
         :param pk:
         :return:
         """
-        validate_key(key)
+        key = sanitize_key(key)
         try:
             with open(self._resolve_path(key), 'rb+') as fp:
                 return fp.read()
@@ -70,9 +70,7 @@ class FileFloe(object):
         """
         if not keys:
             return {}
-        for key in keys:
-            validate_key(key)
-
+        keys = [sanitize_key(key) for key in keys]
         result = {k: self.get(k) for k in keys}
         return {k: v for k, v in result.items() if v is not None}
 
@@ -83,7 +81,7 @@ class FileFloe(object):
         :param bin_data:
         :return:
         """
-        validate_key(key)
+        key = sanitize_key(key)
         path = self._resolve_path(key)
         self._mkdirs(os.path.dirname(path))
         try:
@@ -98,10 +96,10 @@ class FileFloe(object):
         :param mapping: dict
         :return:
         """
-        for key in mapping.keys():
-            validate_key(key)
-        for k, v in mapping.items():
-            self.set(k, v)
+        mapping = {sanitize_key(key): value for key, value in mapping.items()}
+
+        for key, value in mapping.items():
+            self.set(key, value)
 
     def delete(self, key):
         """
@@ -109,7 +107,7 @@ class FileFloe(object):
         :param key:
         :return:
         """
-        validate_key(key)
+        key = sanitize_key(key)
         try:
             os.unlink(self._resolve_path(key))
         except OSError:
@@ -121,8 +119,7 @@ class FileFloe(object):
         :param keys:
         :return:
         """
-        for key in keys:
-            validate_key(key)
+        keys = [sanitize_key(key) for key in keys]
 
         for key in keys:
             self.delete(key)

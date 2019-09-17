@@ -10,7 +10,6 @@ with warnings.catch_warnings():
     from newrelic.agent import (
         callable_name,
         FunctionTrace,
-        current_transaction,
         set_transaction_name,
         record_exception,
         initialize,

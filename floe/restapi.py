@@ -3,7 +3,7 @@ import json
 from .exceptions import FloeException, FloeWriteException, \
     FloeDeleteException, FloeConfigurationException, FloeInvalidKeyException, \
     FloeOperationalException, FloeReadException
-from .helpers import validate_key
+from .helpers import sanitize_key
 from multiprocessing.pool import ThreadPool
 
 
@@ -64,7 +64,7 @@ class RestClientFloe(object):
         return self._pool
 
     def get(self, key):
-        validate_key(key)
+        key = sanitize_key(key)
         resp = self.session.get("%s/%s" % (self._baseurl, key))
         self.raise_exception_from_response(resp)
 
@@ -77,7 +77,7 @@ class RestClientFloe(object):
         return resp.content
 
     def set(self, key, value):
-        validate_key(key)
+        key = sanitize_key(key)
         resp = self.session.put("%s/%s" % (self._baseurl, key),
                                 data=value,
                                 headers={
@@ -86,14 +86,13 @@ class RestClientFloe(object):
         self.raise_exception_from_response(resp)
 
     def delete(self, key):
-        validate_key(key)
+        key = sanitize_key(key)
         resp = self.session.delete("%s/%s" % (self._baseurl, key))
         self.raise_exception_from_response(resp)
 
     def get_multi(self, keys):
         responses = {}
-        for key in keys:
-            validate_key(key)
+        keys = [sanitize_key(key) for key in keys]
 
         def _get(key):
             responses[key] = self.get(key)
@@ -103,8 +102,7 @@ class RestClientFloe(object):
         return {k: v for k, v in responses.items() if v is not None}
 
     def set_multi(self, mapping):
-        for key in mapping.keys():
-            validate_key(key)
+        mapping = {sanitize_key(key): value for key, value in mapping.items()}
 
         def _set(row):
             self.set(*row)
@@ -113,7 +111,7 @@ class RestClientFloe(object):
 
     def delete_multi(self, keys):
         for key in keys:
-            validate_key(key)
+            sanitize_key(key)
 
         def _delete(key):
             self.delete(key)

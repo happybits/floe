@@ -1,11 +1,10 @@
 import pymysql
 import warnings
 from contextlib import contextmanager
-from .helpers import current_time, validate_key
+from .helpers import current_time, sanitize_key
 from .exceptions import FloeReadException, \
     FloeWriteException, FloeDeleteException, \
     FloeDataOverflowException, FloeConfigurationException
-
 
 warnings.filterwarnings('ignore', category=pymysql.Warning)
 
@@ -76,7 +75,6 @@ class MySQLPool(object):
 
 
 class MySQLConnection(object):
-
     exception_class = pymysql.Error
 
     def __init__(self, **kwargs):
@@ -143,10 +141,10 @@ class MySQLFloe(object):
         if not db:
             return
 
-        statement = "SELECT `CHARACTER_MAXIMUM_LENGTH`"\
-                    "FROM `INFORMATION_SCHEMA`.`COLUMNS`"\
-                    "WHERE `TABLE_SCHEMA` = %s"\
-                    "AND `TABLE_NAME` = %s"\
+        statement = "SELECT `CHARACTER_MAXIMUM_LENGTH`" \
+                    "FROM `INFORMATION_SCHEMA`.`COLUMNS`" \
+                    "WHERE `TABLE_SCHEMA` = %s" \
+                    "AND `TABLE_NAME` = %s" \
                     "AND `COLUMN_NAME` = 'bin'"
 
         try:
@@ -161,6 +159,7 @@ class MySQLFloe(object):
     def _validate_data(self, value):
         if len(value) > self.max_char_len:
             raise FloeDataOverflowException(len(value))
+        return value
 
     def _create_pool(self, pool_size=5, **conn_kwargs):
         if pool_size and pool_size > 0:
@@ -179,7 +178,7 @@ class MySQLFloe(object):
         :param pk:
         :return:
         """
-        validate_key(pk)
+        pk = sanitize_key(pk)
         statement = "SELECT `bin` FROM {} WHERE `pk` = %s".format(self.table)
         try:
             with self.pool.connection() as connection:
@@ -200,9 +199,7 @@ class MySQLFloe(object):
         """
         if not keys:
             return {}
-        for key in keys:
-            validate_key(key)
-
+        keys = [sanitize_key(key) for key in keys]
         statement = "SELECT `pk`, `bin` FROM {} WHERE `pk` IN ({})".format(
             self.table,
             ', '.join(["%s" for _ in keys])
@@ -222,8 +219,6 @@ class MySQLFloe(object):
         :param bin_data:
         :return:
         """
-        validate_key(pk)
-        self._validate_data(bin_data)
         return self.set_multi({pk: bin_data})
 
     def set_multi(self, mapping):
@@ -232,15 +227,15 @@ class MySQLFloe(object):
         :param mapping: dict
         :return:
         """
-        for k in mapping.keys():
-            validate_key(k)
+        mapping = {sanitize_key(key): self._validate_data(value) for key, value
+                   in mapping.items()}
 
         statement = "INSERT INTO {} (`pk`, `bin`) VALUES {} " \
                     "ON DUPLICATE KEY UPDATE `bin` = VALUES(`bin`)"
         tuple_list = []
-        for k, v in mapping.items():
-            tuple_list.append(k)
-            tuple_list.append(v)
+        for key, value in mapping.items():
+            tuple_list.append(key)
+            tuple_list.append(value)
 
         statement = statement.format(self.table, ', '.join(
             ["(%s, %s)" for _ in range(0, len(mapping))]))
@@ -258,7 +253,6 @@ class MySQLFloe(object):
         :param key:
         :return:
         """
-        validate_key(key)
         return self.delete_multi([key])
 
     def delete_multi(self, keys):
@@ -270,8 +264,7 @@ class MySQLFloe(object):
         if not keys:
             return {}
 
-        for key in keys:
-            validate_key(key)
+        keys = [sanitize_key(key) for key in keys]
 
         statement = "DELETE FROM {} WHERE `pk` IN ({})".format(
             self.table,

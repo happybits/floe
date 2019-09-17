@@ -11,9 +11,14 @@ def current_time():
     return time.time()
 
 
-def validate_key(key):
+def sanitize_key(key):
+    if not key:
+        raise FloeInvalidKeyException(key)
+
+    key = str(key)
     if not KEY_PATTERN.match(key):
         raise FloeInvalidKeyException(key)
+    return key
 
 
 def chunks(iterable, size):
