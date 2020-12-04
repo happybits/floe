@@ -1,0 +1,4 @@
+
+- name: test
+  service: floe_test
+  command: python3 -m unittest test
