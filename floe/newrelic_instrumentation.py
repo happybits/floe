@@ -11,7 +11,7 @@ with warnings.catch_warnings():
         callable_name,
         FunctionTrace,
         set_transaction_name,
-        record_exception,
+        notice_error,
         initialize,
         WSGIApplicationWrapper,
     )
@@ -33,7 +33,7 @@ def trace(f, group=None, txn_name=None):
                 return f(*args, **kwargs)
             except Exception as e:
                 if not isinstance(e, falcon.HTTPNotFound):
-                    record_exception(*sys.exc_info())
+                    notice_error(sys.exc_info())
                 raise
 
     return inner
@@ -50,7 +50,7 @@ def app_trace(f):
                 return f(resource, req, resp, *args, **kwargs)
             except Exception as e:
                 if not isinstance(e, falcon.HTTPNotFound):
-                    record_exception(*sys.exc_info())
+                    notice_error(sys.exc_info())
                 raise
 
     return inner
