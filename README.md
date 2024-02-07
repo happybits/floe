@@ -30,6 +30,17 @@ You can add other connectors. The interface provides the following methods:
   * delete_multi
   * ids
   * flush
-  
-The ids method returns a generator to iterate. 
+
+The ids method returns a generator to iterate.
 The multi methods allow you do do batch operations on multiple keys.
+
+## Running Locally
+
+Due to some inconsistencies with the way request bodies are handled in different WSGI implementations, PUT requests with a missing or incorrect Content-Length header may hang (https://falcon.readthedocs.io/en/stable/user/faq.html#why-does-req-stream-read-hang-for-certain-requests).
+
+An easy workaround for this when running the server locally is to use gunicorn rather than wsgiref.simple_server
+
+```
+$ pip install gunicorn
+$ gunicorn -w 4 run:app
+```
