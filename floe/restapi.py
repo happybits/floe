@@ -109,6 +109,7 @@ class RestClientFloe(object):
         def _set(row):
             self.set(*row)
 
+        # Iterate over the results to block until all requests finish
         list(self.pool.map(_set, mapping.items(), timeout=FLOE_TASK_TIMEOUT))
 
     def delete_multi(self, keys):
@@ -118,6 +119,7 @@ class RestClientFloe(object):
         def _delete(key):
             self.delete(key)
 
+        # Iterate over the results to block until all requests finish
         list(self.pool.map(_delete, keys, timeout=FLOE_TASK_TIMEOUT))
 
     def ids(self):
