@@ -4,8 +4,10 @@ from .exceptions import FloeException, FloeWriteException, \
     FloeDeleteException, FloeConfigurationException, FloeInvalidKeyException, \
     FloeOperationalException, FloeReadException
 from .helpers import sanitize_key
-from multiprocessing.pool import ThreadPool
+from concurrent.futures import ThreadPoolExecutor
 
+FLOE_REST_TIMEOUT = 30
+FLOE_TASK_TIMEOUT = 60
 
 class RestClientFloe(object):
 
@@ -60,12 +62,12 @@ class RestClientFloe(object):
     @property
     def pool(self):
         if self._pool is None:
-            self._pool = ThreadPool(processes=self.queue_size)
+            self._pool = ThreadPoolExecutor(max_workers=self.queue_size)
         return self._pool
 
     def get(self, key):
         key = sanitize_key(key)
-        resp = self.session.get("%s/%s" % (self._baseurl, key))
+        resp = self.session.get("%s/%s" % (self._baseurl, key), timeout=FLOE_REST_TIMEOUT)
         self.raise_exception_from_response(resp)
 
         if resp.status_code == 404:
@@ -81,25 +83,25 @@ class RestClientFloe(object):
         resp = self.session.put("%s/%s" % (self._baseurl, key),
                                 data=value,
                                 headers={
-                                    'content-type': 'binary/octet-stream'}
+                                    'content-type': 'binary/octet-stream'},
+                                timeout=FLOE_REST_TIMEOUT
                                 )
         self.raise_exception_from_response(resp)
 
     def delete(self, key):
         key = sanitize_key(key)
-        resp = self.session.delete("%s/%s" % (self._baseurl, key))
+        resp = self.session.delete("%s/%s" % (self._baseurl, key), timeout=FLOE_REST_TIMEOUT)
         self.raise_exception_from_response(resp)
 
     def get_multi(self, keys):
-        responses = {}
         keys = [sanitize_key(key) for key in keys]
 
         def _get(key):
-            responses[key] = self.get(key)
+            return key, self.get(key)
 
-        self.pool.map(_get, keys)
+        responses = list(self.pool.map(_get, keys, timeout=FLOE_TASK_TIMEOUT))
 
-        return {k: v for k, v in responses.items() if v is not None}
+        return {k: v for k, v in responses if v is not None}
 
     def set_multi(self, mapping):
         mapping = {sanitize_key(key): value for key, value in mapping.items()}
@@ -107,7 +109,8 @@ class RestClientFloe(object):
         def _set(row):
             self.set(*row)
 
-        self.pool.map(_set, mapping.items())
+        # Iterate over the results to block until all requests finish
+        list(self.pool.map(_set, mapping.items(), timeout=FLOE_TASK_TIMEOUT))
 
     def delete_multi(self, keys):
         for key in keys:
@@ -116,10 +119,11 @@ class RestClientFloe(object):
         def _delete(key):
             self.delete(key)
 
-        self.pool.map(_delete, keys)
+        # Iterate over the results to block until all requests finish
+        list(self.pool.map(_delete, keys, timeout=FLOE_TASK_TIMEOUT))
 
     def ids(self):
-        resp = self.session.get(self._baseurl)
+        resp = self.session.get(self._baseurl, timeout=FLOE_REST_TIMEOUT)
         self.raise_exception_from_response(resp)
 
         buffer = b''
