@@ -44,3 +44,11 @@ An easy workaround for this when running the server locally is to use gunicorn r
 $ pip install gunicorn
 $ gunicorn -w 4 run:app
 ```
+
+## Publishing new versions
+
+1. Set a new version number in floe/version.py
+2. `./activate` to set up and enter the project venv
+3. `./publish.sh` to create source and binary distributions and upload them to pypi using the `twine` tool
+
+Credentials for pypi are stored in 1password
