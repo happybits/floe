@@ -1,2 +1,2 @@
-falcon<3.0.0
+falcon<4.0.0
 requests
