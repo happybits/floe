@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-command -v virtualenv >/dev/null 2>&1 || { echo >&2 "I require virtualenv but it's not installed.  Aborting."; exit 1; }
-
 root_dir=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
 
 
@@ -26,8 +24,8 @@ fi
 
 if [ ! -f "$venv_dir/bin/python" ]
 then
-    echo "configuring virtualenv $venv_dir ..."
-    virtualenv -p python3 -q "$venv_dir" || { echo >&2 "unable to configure the virtualenv for the project in $venv_dir"; exit 1; }
+    echo "configuring venv $venv_dir ..."
+    python -m venv "$venv_dir" || { echo >&2 "unable to configure the venv for the project in $venv_dir"; exit 1; }
 fi
 
 "$venv_dir/bin/python" -m pip install --upgrade pip

@@ -7,5 +7,6 @@ requests-wsgi-adapter==0.4.1
 newrelic
 pymysql
 boto3
+wheel==0.45.1
+twine~=6.1.0
 -r requirements.txt
-
