@@ -1,11 +1,14 @@
 import json
+import logging
 import falcon
 from .helpers import chunks
 from .exceptions import FloeException, FloeWriteException, \
     FloeDeleteException, FloeConfigurationException, FloeInvalidKeyException, \
     FloeOperationalException, FloeReadException
 from .connector import get_connection
-from .instrumentation import wrap_app, app_trace
+from .otel_instrumentation import app_trace
+
+logger = logging.getLogger(__name__)
 
 
 class RestServerFloeIndex(object):
@@ -21,9 +24,6 @@ class RestServerFloeIndex(object):
                 yield json.dumps([k for k in keys]).encode('utf-8')
                 yield b'\n'
 
-        # not setting because wsgiref doesn't natively support it and
-        # uwsgi will automatically handle this for us.
-        # resp.append_header('Transfer-Encoding', 'chunked')
         resp.stream = generator()
 
     @app_trace
@@ -73,35 +73,42 @@ def format_error(ex, resp, code='INTERNAL',
 
 
 def generic_error_handler(ex, req, resp, params):
+    logger.exception("Internal error: %s", ex)
     format_error(ex, resp, code='INTERNAL',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
 def configuration_error_handler(ex, req, resp, params):
+    logger.error("Configuration error: %s", ex)
     format_error(ex, resp, code='CONFIGURATION', status=falcon.HTTP_400)
 
 
 def operational_error_handler(ex, req, resp, params):
+    logger.exception("Operational error: %s", ex)
     format_error(ex, resp, code='OPERATIONAL',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
 def read_error_handler(ex, req, resp, params):
+    logger.exception("Read error: %s", ex)
     format_error(ex, resp, code='READ',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
 def write_error_handler(ex, req, resp, params):
+    logger.exception("Write error: %s", ex)
     format_error(ex, resp, code='WRITE',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
 def delete_error_handler(ex, req, resp, params):
+    logger.exception("Delete error: %s", ex)
     format_error(ex, resp, code='DELETE',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
 def invalid_key_handler(ex, req, resp, params):
+    logger.warning("Invalid key: %s", ex)
     format_error(ex, resp, code='INVALID-KEY', status=falcon.HTTP_400)
 
 
@@ -121,4 +128,4 @@ def floe_server(routes=None):
     app.add_error_handler(FloeDeleteException, delete_error_handler)
     app.add_error_handler(FloeConfigurationException,
                           configuration_error_handler)
-    return wrap_app(app)
+    return app

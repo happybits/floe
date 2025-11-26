@@ -1,4 +1,5 @@
 .*
+!.github/
 *.pyc
 .DS_Store
 *.diff

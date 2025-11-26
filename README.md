@@ -5,12 +5,9 @@ This presents a simple key value data store with a list of ids and configurable 
 ## Configuration
 You can configure docker with environmental variables.
 
-new relic can use the standard environmental variables:
+OpenTelemetry is used for instrumentation. Configure via standard OTEL environment variables.
 
-https://docs.newrelic.com/docs/agents/python-agent/installation-configuration/python-agent-configuration#environment-variables
-
-
-then you can add additonal environmental vars for backends.
+You can add additional environmental vars for backends.
 
 ```
 FLOE_URL_FOO='file://.floe'
