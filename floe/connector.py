@@ -20,6 +20,13 @@ _CONNECTIONS = {}
 
 
 def get_connection(name):
+    """
+    this returns a single connection object based on the name to a floe
+    api. this allows for more efficient connection pooling and reuse of objects
+
+    :param name:
+    :return:
+    """
     name = name.upper()
     try:
         return _CONNECTIONS[name]
@@ -30,6 +37,24 @@ def get_connection(name):
 
 
 def connect(name):
+    """
+    factory method of getting a connection to cold storage based on a dsn name.
+    We look it up in an environmental variable.
+    So far we support mysql, file, and rest types.
+
+    Here are some example environmental vars you could use:
+
+        FLOE_URL_FOO='file://.floe'
+        FLOE_URL_BAR='file:///tmp/floe'
+        FLOE_URL_BAZZ='mysql://root:pass@127.0.0.1:3306/test?table=bazz'
+        FLOE_URL_QUUX='http://127.0.0.1:995/my_namespace'
+
+    now you can connect to them using the names,
+        'foo', 'bar', 'bazz', and 'quux' respectively.
+
+    :param name: string
+    :return: Floe object
+    """
     name = name.upper()
     url = getenv('FLOE_URL_%s' % name)
     if not url:
