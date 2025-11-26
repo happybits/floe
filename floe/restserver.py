@@ -30,7 +30,7 @@ class RestServerFloeIndex(object):
     def on_delete(self, req, resp, domain):
         cs = get_connection(domain)
         cs.flush()
-        resp.body = self.OK_RESPONSE
+        resp.text = self.OK_RESPONSE
 
 
 class RestServerFloeResource(object):
@@ -41,19 +41,19 @@ class RestServerFloeResource(object):
     def on_get(self, req, resp, domain, key):
         cs = get_connection(domain)
         response = cs.get(key)
-        resp.body = b'' if response is None else response
+        resp.data = b'' if response is None else response
 
     @app_trace
     def on_put(self, req, resp, domain, key):
         cs = get_connection(domain)
         cs.set(key, req.stream.read())
-        resp.body = self.OK_RESPONSE
+        resp.text = self.OK_RESPONSE
 
     @app_trace
     def on_delete(self, req, resp, domain, key):
         cs = get_connection(domain)
         cs.delete(key)
-        resp.body = self.OK_RESPONSE
+        resp.text = self.OK_RESPONSE
 
 
 class RestServerFloeLanding(object):
@@ -61,7 +61,7 @@ class RestServerFloeLanding(object):
     @app_trace
     def on_get(self, req, resp):
         resp.content_type = 'text/plain'
-        resp.body = 'Floe Microservice'
+        resp.text = 'Floe Microservice'
 
 
 def format_error(ex, resp, code='INTERNAL',
@@ -69,7 +69,7 @@ def format_error(ex, resp, code='INTERNAL',
     resp.status = status
     resp.append_header('X-ERR', code)
     resp.content_type = 'text/plain'
-    resp.body = str(ex.message)
+    resp.text = str(ex.message)
 
 
 def generic_error_handler(ex, req, resp, params):
@@ -113,7 +113,7 @@ def invalid_key_handler(ex, req, resp, params):
 
 
 def floe_server(routes=None):
-    app = falcon.API(media_type='binary/octet-stream')
+    app = falcon.App(media_type='binary/octet-stream')
     app.add_route('/{domain}/{key}', RestServerFloeResource())
     app.add_route('/{domain}', RestServerFloeIndex())
     app.add_route('/', RestServerFloeLanding())
