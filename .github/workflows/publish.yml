@@ -1,0 +1,44 @@
+name: Publish to PyPI
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Install dependencies
+        run: pip install -r dev-requirements.txt
+      - name: Run tests
+        run: pytest test.py -v --ignore-glob='*mysql*'
+
+  publish:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.9'
+      - name: Verify tag matches version.py
+        run: |
+          TAG=${GITHUB_REF#refs/tags/v}
+          VERSION=$(python -c "exec(open('floe/version.py').read()); print(__version__)")
+          if [ "$TAG" != "$VERSION" ]; then
+            echo "Tag v$TAG does not match version.py ($VERSION)"
+            exit 1
+          fi
+      - name: Install build tools
+        run: pip install build wheel
+      - name: Build package
+        run: python -m build
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}

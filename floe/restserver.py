@@ -1,11 +1,14 @@
 import json
+import logging
 import falcon
 from .helpers import chunks
 from .exceptions import FloeException, FloeWriteException, \
     FloeDeleteException, FloeConfigurationException, FloeInvalidKeyException, \
     FloeOperationalException, FloeReadException
 from .connector import get_connection
-from .instrumentation import wrap_app, app_trace
+from .otel_instrumentation import app_trace
+
+logger = logging.getLogger(__name__)
 
 
 class RestServerFloeIndex(object):
@@ -21,16 +24,13 @@ class RestServerFloeIndex(object):
                 yield json.dumps([k for k in keys]).encode('utf-8')
                 yield b'\n'
 
-        # not setting because wsgiref doesn't natively support it and
-        # uwsgi will automatically handle this for us.
-        # resp.append_header('Transfer-Encoding', 'chunked')
         resp.stream = generator()
 
     @app_trace
     def on_delete(self, req, resp, domain):
         cs = get_connection(domain)
         cs.flush()
-        resp.body = self.OK_RESPONSE
+        resp.text = self.OK_RESPONSE
 
 
 class RestServerFloeResource(object):
@@ -41,19 +41,19 @@ class RestServerFloeResource(object):
     def on_get(self, req, resp, domain, key):
         cs = get_connection(domain)
         response = cs.get(key)
-        resp.body = b'' if response is None else response
+        resp.data = b'' if response is None else response
 
     @app_trace
     def on_put(self, req, resp, domain, key):
         cs = get_connection(domain)
         cs.set(key, req.stream.read())
-        resp.body = self.OK_RESPONSE
+        resp.text = self.OK_RESPONSE
 
     @app_trace
     def on_delete(self, req, resp, domain, key):
         cs = get_connection(domain)
         cs.delete(key)
-        resp.body = self.OK_RESPONSE
+        resp.text = self.OK_RESPONSE
 
 
 class RestServerFloeLanding(object):
@@ -61,7 +61,7 @@ class RestServerFloeLanding(object):
     @app_trace
     def on_get(self, req, resp):
         resp.content_type = 'text/plain'
-        resp.body = 'Floe Microservice'
+        resp.text = 'Floe Microservice'
 
 
 def format_error(ex, resp, code='INTERNAL',
@@ -69,44 +69,51 @@ def format_error(ex, resp, code='INTERNAL',
     resp.status = status
     resp.append_header('X-ERR', code)
     resp.content_type = 'text/plain'
-    resp.body = str(ex.message)
+    resp.text = str(ex.message)
 
 
 def generic_error_handler(ex, req, resp, params):
+    logger.exception("Internal error: %s", ex)
     format_error(ex, resp, code='INTERNAL',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
 def configuration_error_handler(ex, req, resp, params):
+    logger.error("Configuration error: %s", ex)
     format_error(ex, resp, code='CONFIGURATION', status=falcon.HTTP_400)
 
 
 def operational_error_handler(ex, req, resp, params):
+    logger.exception("Operational error: %s", ex)
     format_error(ex, resp, code='OPERATIONAL',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
 def read_error_handler(ex, req, resp, params):
+    logger.exception("Read error: %s", ex)
     format_error(ex, resp, code='READ',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
 def write_error_handler(ex, req, resp, params):
+    logger.exception("Write error: %s", ex)
     format_error(ex, resp, code='WRITE',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
 def delete_error_handler(ex, req, resp, params):
+    logger.exception("Delete error: %s", ex)
     format_error(ex, resp, code='DELETE',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
 def invalid_key_handler(ex, req, resp, params):
+    logger.warning("Invalid key: %s", ex)
     format_error(ex, resp, code='INVALID-KEY', status=falcon.HTTP_400)
 
 
 def floe_server(routes=None):
-    app = falcon.API(media_type='binary/octet-stream')
+    app = falcon.App(media_type='binary/octet-stream')
     app.add_route('/{domain}/{key}', RestServerFloeResource())
     app.add_route('/{domain}', RestServerFloeIndex())
     app.add_route('/', RestServerFloeLanding())
@@ -121,4 +128,4 @@ def floe_server(routes=None):
     app.add_error_handler(FloeDeleteException, delete_error_handler)
     app.add_error_handler(FloeConfigurationException,
                           configuration_error_handler)
-    return wrap_app(app)
+    return app

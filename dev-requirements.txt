@@ -4,7 +4,6 @@ pytest
 tox
 flake8>=3.5.0
 requests-wsgi-adapter==0.4.1
-newrelic
 pymysql
 boto3
 wheel==0.45.1

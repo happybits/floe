@@ -31,8 +31,9 @@ setup(
     ],
     license='MIT',
     install_requires=[
-        'falcon>=0.3.0',
+        'falcon>=0.3.0,<4.0.0',
         'requests',
+        'opentelemetry-api',
     ],
     include_package_data=True,
     long_description=long_description,
