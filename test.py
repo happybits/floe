@@ -253,7 +253,7 @@ class RestServerAdditionalRoute(object):
 
     def on_get(self, req, resp):
         resp.content_type = 'text/plain'
-        resp.body = 'additional'
+        resp.text = 'additional'
 
 
 class RestServerTest(unittest.TestCase):

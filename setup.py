@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 import os
+import re
 from os import path
 from setuptools import setup
-import imp
 
 MYDIR = path.abspath(os.path.dirname(__file__))
 long_description = open(os.path.join(MYDIR, 'README.md')).read()
 
-version = imp.load_source('version',
-                          path.join('.', 'floe', 'version.py')).__version__
+with open(path.join(MYDIR, 'floe', 'version.py')) as f:
+    version = re.search(r"__version__ = ['\"]([^'\"]+)['\"]", f.read()).group(1)
 
 setup(
     name='floe',
@@ -21,17 +21,20 @@ setup(
     classifiers=[
         'Development Status :: 4 - Beta',
         'Programming Language :: Python',
-        'Programming Language :: Python',
         'Programming Language :: Python :: Implementation :: CPython',
         'Programming Language :: Python :: Implementation :: PyPy',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.9',
+        'Programming Language :: Python :: 3.10',
+        'Programming Language :: Python :: 3.11',
+        'Programming Language :: Python :: 3.12',
+        'Programming Language :: Python :: 3.13',
         'Environment :: Web Environment',
         'Operating System :: POSIX',
     ],
     license='MIT',
+    python_requires='>=3.10',
     install_requires=[
-        'falcon>=0.3.0,<4.0.0',
+        'falcon>=3.0.0,<5.0.0',
         'requests',
         'opentelemetry-api',
     ],

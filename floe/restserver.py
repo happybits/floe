@@ -46,7 +46,7 @@ class RestServerFloeResource(object):
     @app_trace
     def on_put(self, req, resp, domain, key):
         cs = get_connection(domain)
-        cs.set(key, req.stream.read())
+        cs.set(key, req.bounded_stream.read())
         resp.text = self.OK_RESPONSE
 
     @app_trace
@@ -72,42 +72,42 @@ def format_error(ex, resp, code='INTERNAL',
     resp.text = str(ex.message)
 
 
-def generic_error_handler(ex, req, resp, params):
+def generic_error_handler(req, resp, ex, params):
     logger.exception("Internal error: %s", ex)
     format_error(ex, resp, code='INTERNAL',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
-def configuration_error_handler(ex, req, resp, params):
+def configuration_error_handler(req, resp, ex, params):
     logger.error("Configuration error: %s", ex)
     format_error(ex, resp, code='CONFIGURATION', status=falcon.HTTP_400)
 
 
-def operational_error_handler(ex, req, resp, params):
+def operational_error_handler(req, resp, ex, params):
     logger.exception("Operational error: %s", ex)
     format_error(ex, resp, code='OPERATIONAL',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
-def read_error_handler(ex, req, resp, params):
+def read_error_handler(req, resp, ex, params):
     logger.exception("Read error: %s", ex)
     format_error(ex, resp, code='READ',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
-def write_error_handler(ex, req, resp, params):
+def write_error_handler(req, resp, ex, params):
     logger.exception("Write error: %s", ex)
     format_error(ex, resp, code='WRITE',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
-def delete_error_handler(ex, req, resp, params):
+def delete_error_handler(req, resp, ex, params):
     logger.exception("Delete error: %s", ex)
     format_error(ex, resp, code='DELETE',
                  status=falcon.HTTP_INTERNAL_SERVER_ERROR)
 
 
-def invalid_key_handler(ex, req, resp, params):
+def invalid_key_handler(req, resp, ex, params):
     logger.warning("Invalid key: %s", ex)
     format_error(ex, resp, code='INVALID-KEY', status=falcon.HTTP_400)
 
