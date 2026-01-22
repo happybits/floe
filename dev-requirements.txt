@@ -6,6 +6,6 @@ flake8>=3.5.0
 requests-wsgi-adapter==0.4.1
 pymysql
 boto3
-wheel==0.45.1
+wheel==0.46.2
 twine~=6.1.0
 -r requirements.txt
